@@ -12,13 +12,17 @@ import dev.jsinco.recipes.guis.RecipeGui
 import dev.jsinco.recipes.recipe.Recipe
 import dev.jsinco.recipes.recipe.RecipeItem
 import dev.jsinco.recipes.recipe.RecipeUtil
+import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.Sound
+import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
 import org.bukkit.event.inventory.InventoryClickEvent
+import org.bukkit.event.player.PlayerFishEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.world.LootGenerateEvent
 import org.bukkit.inventory.ItemStack
@@ -74,6 +78,30 @@ class Events(private val plugin: BreweryPlugin) : Listener {
             recipe = RecipeUtil.getRandomRecipe()
         }
         event.loot.add(RecipeItem(recipe).item)
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    fun onFishing(event: PlayerFishEvent) {
+        if (event.state != PlayerFishEvent.State.CAUGHT_FISH) return
+
+        val bound = config.recipeSpawning.bound
+        val chance = config.recipeSpawning.chance
+        if (bound <= 0 || chance <= 0) return
+        else if (Random.nextInt(bound) > chance) return
+
+        var recipe: Recipe = RecipeUtil.getRandomRecipe()
+        while (config.recipeSpawning.blacklistedRecipes.contains(recipe.recipeKey)) {
+            recipe = RecipeUtil.getRandomRecipe()
+        }
+
+        val item = RecipeItem(recipe).item
+
+        val player = event.player
+        if (player.inventory.addItem(item).isNotEmpty()) {
+            player.world.dropItemNaturally(player.location, item)
+        }
+
+        event.caught?.remove()
     }
 
     @EventHandler
