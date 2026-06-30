@@ -13,6 +13,9 @@ import dev.jsinco.recipes.permissions.LuckPermsPermission
 import dev.jsinco.recipes.permissions.PermissionManager
 import dev.jsinco.recipes.permissions.PermissionSetter
 import dev.jsinco.recipes.recipe.RecipeUtil
+import org.bukkit.Material
+import org.bukkit.NamespacedKey
+import org.bukkit.inventory.ShapelessRecipe
 
 // Idea:
 // Allow recipes for brews to be collected from randomly generated chests and make some recipes rarer than others
@@ -32,6 +35,8 @@ class Recipes : BreweryAddon() {
         lateinit var addon: Recipes
             private set
         lateinit var configManager: AddonConfigManager
+            private set
+        lateinit var key: NamespacedKey
             private set
     }
 
@@ -55,10 +60,27 @@ class Recipes : BreweryAddon() {
             }
         }
 
+        key = NamespacedKey(breweryPlugin, "recipe_book_craft")
         registerListener(Events(breweryPlugin))
         registerCommand("recipes", AddonCommandManager(breweryPlugin))
 
+        val recipe = getCraft();
+        if (recipe != null) {
+            breweryPlugin.server.addRecipe(recipe);
+        }
+
         RecipeUtil.loadAllRecipes()
+    }
+
+    fun getCraft(): ShapelessRecipe? {
+        val item = Util.getRecipeBookItem()
+        if (item == null) return null;
+
+        val recipe = ShapelessRecipe(key, item)
+        recipe.addIngredient(Material.BOOK)
+        recipe.addIngredient(Material.POTION)
+
+        return recipe;
     }
 
     override fun onAddonDisable() {
